@@ -1,0 +1,66 @@
+from telegram import Update, Bot
+from telegram.ext import Updater, CommandHandler, CallbackContext
+
+# Bot token from BotFather
+TOKEN = '7526734428:AAFbg8QpTRqtYRzGOmmKS3RCYo-O62xjhFc'
+
+# Initialize bot and updater
+bot = Bot(7526734428:AAFbg8QpTRqtYRzGOmmKS3RCYo-O62xjhFc)
+updater = Updater(7526734428:AAFbg8QpTRqtYRzGOmmKS3RCYo-O62xjhFc, use_context=True)
+dispatcher = updater.dispatcher
+
+# Initialize user scores and referrals
+user_scores = {}
+user_referrals = {}
+
+# Start command handler
+def start(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    user_scores[user_id] = 0
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Welcome to GIGA-BITE! Tap /tap to earn points. Share your referral link to earn more points: /referral")
+
+# Tap command handler
+def tap(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if user_id in user_scores:
+        user_scores[user_id] += 1
+        context.bot.send_message(chat_id=update.effective_chat.id, text=f"You have {user_scores[user_id]} points!")
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Please start the game first by typing /start.")
+
+# Referral command handler
+def referral(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    referral_link = f"https://t.me/YOUR_BOT_USERNAME?start={user_id}"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=f"Share this link to refer friends: {referral_link}")
+
+# Handle new users joining via referral link
+def handle_referral(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    args = context.args
+    if args:
+        referrer_id = int(args[0])
+        if referrer_id in user_scores:
+            user_scores[referrer_id] += 10  # Referrer earns 10 points
+            context.bot.send_message(chat_id=referrer_id, text="You earned 10 points for a successful referral!")
+    start(update, context)
+
+# Leaderboard command handler
+def leaderboard(update: Update, context: CallbackContext):
+    leaderboard_text = "Leaderboard:\n"
+    sorted_scores = sorted(user_scores.items(), key=lambda x: x[1], reverse=True)
+    for user_id, score in sorted_scores:
+        user = context.bot.get_chat(user_id)
+        leaderboard_text += f"{user.first_name}: {score} points\n"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=leaderboard_text)
+
+# Add handlers to dispatcher
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("tap", tap))
+dispatcher.add_handler(CommandHandler("referral", referral))
+dispatcher.add_handler(CommandHandler("leaderboard", leaderboard))
+dispatcher.add_handler(CommandHandler("start", handle_referral, pass_args=True))
+
+# Start the bot
+updater.start_polling()
+updater.idle()
